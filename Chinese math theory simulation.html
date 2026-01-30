@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMS Social Dynamics Simulator | Chinese Mathematical System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Times+New+Roman:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Times New Roman', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+        }
+        
+        .parameter-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #334155;
+            outline: none;
+        }
+        
+        .parameter-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .parameter-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        
+        .agent-node {
+            transition: all 0.3s ease;
+        }
+        
+        .imnb-glow {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+        }
+        
+        .imsb-glow {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+        }
+        
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .math-font {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        
+        .vampirism-effect {
+            animation: pulse-ring 0.6s ease-out;
+        }
+        
+        .phase-transition-alert {
+            animation: flash 2s infinite;
+        }
+        
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body class="min-h-screen grid-bg">
+
+    <!-- Header -->
+    <header class="p-6 border-b border-slate-700 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    CMS Social Dynamics Simulator
+                </h1>
+                <p class="text-sm text-slate-400 mt-1">Chinese Mathematical System: Vampirism & Rice-planting Dynamics</p>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div class="text-right">
+                    <div class="text-xs text-slate-400">System Status</div>
+                    <div id="system-status" class="text-lg font-bold text-emerald-400">IMSB Stable State</div>
+                </div>
+                <button onclick="toggleSimulation()" id="play-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition-all">
+                    Start Simulation
+                </button>
+                <button onclick="resetSimulation()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Panel: Parameters -->
+        <div class="space-y-4">
+            <!-- Core Parameters -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                    Core Parameters
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>Cultural Coefficient α (VRA-1)</span>
+                            <span class="math-font text-blue-400" id="val-alpha">0.5</span>
+                        </label>
+                        <input type="range" min="0" max="2" step="0.1" value="0.5" class="parameter-slider" id="alpha" oninput="updateParam('alpha', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">Jump speed from unentitled success</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>Stabilization Coefficient β (VRA-2)</span>
+                            <span class="math-font text-green-400" id="val-beta">0.1</span>
+                        </label>
+                        <input type="range" min="0.01" max="0.5" step="0.01" value="0.1" class="parameter-slider" id="beta" oninput="updateParam('beta', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">Convergence speed from entitled success</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>Rice-planting Reinforcement γ (RFA-2)</span>
+                            <span class="math-font text-yellow-400" id="val-gamma">0.3</span>
+                        </label>
+                        <input type="range" min="0" max="1" step="0.05" value="0.3" class="parameter-slider" id="gamma" oninput="updateParam('gamma', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">Strength to maintain IMNB after failure</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>Social Contagion η (GUA-1)</span>
+                            <span class="math-font text-purple-400" id="val-eta">0.4</span>
+                        </label>
+                        <input type="range" min="0" max="1" step="0.05" value="0.4" class="parameter-slider" id="eta" oninput="updateParam('eta', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">Catalytic efficiency of unconscious field</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Density -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-red-400 rounded-full"></span>
+                    Social Density σ
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>Connection Probability</span>
+                            <span class="math-font text-red-400" id="val-sigma">0.3</span>
+                        </label>
+                        <input type="range" min="0" max="1" step="0.05" value="0.3" class="parameter-slider" id="sigma" oninput="updateParam('sigma', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">Interaction density between agents</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>Critical Density σc (GUA-2)</span>
+                            <span class="math-font text-orange-400" id="val-sigma-c">0.5</span>
+                        </label>
+                        <input type="range" min="0.1" max="1" step="0.05" value="0.5" class="parameter-slider" id="sigma-c" oninput="updateParam('sigmaC', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">Phase transition threshold</div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-slate-800/50 rounded border border-slate-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">Current Density State:</span>
+                            <span id="density-status" class="text-sm font-bold text-emerald-400">σ < σc (Subcritical)</span>
+                        </div>
+                        <div class="w-full bg-slate-700 h-2 rounded-full mt-2 overflow-hidden">
+                            <div id="sigma-bar" class="h-full bg-emerald-400 transition-all duration-500" style="width: 30%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-4">Interventions</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="triggerEvent('vampirism')" class="p-3 bg-red-900/30 border border-red-700/50 hover:bg-red-900/50 rounded-lg text-sm transition-all text-red-200">
+                        🧛 Trigger Vampirism
+                    </button>
+                    <button onclick="triggerEvent('isolation')" class="p-3 bg-blue-900/30 border border-blue-700/50 hover:bg-blue-900/50 rounded-lg text-sm transition-all text-blue-200">
+                        🏝️ Topological Tearing
+                    </button>
+                    <button onclick="triggerEvent('riceplant')" class="p-3 bg-yellow-900/30 border border-yellow-700/50 hover:bg-yellow-900/50 rounded-lg text-sm transition-all text-yellow-200">
+                        🌾 Force Rice-planting
+                    </button>
+                    <button onclick="addAgent()" class="p-3 bg-green-900/30 border border-green-700/50 hover:bg-green-900/50 rounded-lg text-sm transition-all text-green-200">
+                        👤 Add Agent
+                    </button>
+                </div>
+                <div class="mt-3 text-xs text-slate-400">
+                    * Click nodes in the canvas to trigger individual vampirism
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Visualization -->
+        <div class="lg:col-span-2 space-y-4">
+            <!-- Network Visualization -->
+            <div class="glass-panel p-5 relative h-96">
+                <h2 class="text-lg font-bold mb-2 flex justify-between items-center">
+                    <span>Agent Interaction Network</span>
+                    <div class="flex gap-3 text-xs">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500"></span> IMNB (ρ>0.5)</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-500"></span> IMSB (ρ<0.5)</span>
+                    </div>
+                </h2>
+                <canvas id="network-canvas" class="w-full h-full cursor-crosshair"></canvas>
+                <div id="phase-alert" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-red-500 hidden phase-transition-alert pointer-events-none">
+                    ⚠️ Social Phase Transition: IMNB Global Attractor
+                </div>
+            </div>
+
+            <!-- Time Series Chart -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-2">Collective Rating Evolution</h2>
+                <div class="h-48">
+                    <canvas id="time-series"></canvas>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="glass-panel p-4 text-center">
+                    <div class="text-3xl font-bold math-font text-blue-400" id="stat-mean-rho">0.25</div>
+                    <div class="text-xs text-slate-400 mt-1">Average Rating E[ρ]</div>
+                    <div class="text-xs text-slate-500 mt-1" id="stat-variance">Var: 0.02</div>
+                </div>
+                <div class="glass-panel p-4 text-center">
+                    <div class="text-3xl font-bold text-red-400" id="stat-imnb-ratio">15%</div>
+                    <div class="text-xs text-slate-400 mt-1">IMNB Ratio</div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full mt-2">
+                        <div id="imnb-bar" class="h-full bg-red-500 rounded-full transition-all" style="width: 15%"></div>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 text-center">
+                    <div class="text-3xl font-bold text-purple-400" id="stat-entropy">2.4</div>
+                    <div class="text-xs text-slate-400 mt-1">System Entropy S(t)</div>
+                    <div class="text-xs text-slate-500 mt-1" id="attractor-state">Attractor: Mixed</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Theory Reference -->
+    <footer class="max-w-7xl mx-auto p-6 mt-6 border-t border-slate-800 text-sm text-slate-500">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="font-bold text-slate-300 mb-2">Dynamic Equations Reference</h3>
+                <div class="font-mono text-xs space-y-1 opacity-80">
+                    <div>dρ/dt|<sub>VRA</sub> = α·(μ/μ<sub>ref</sub>)·(1-ρ) <span class="text-slate-600">// Vampirism Jump</span></div>
+                    <div>dρ/dt|<sub>RFA</sub> = γ·ρ·(1-ρ) <span class="text-slate-600">// Rice-planting Maintenance</span></div>
+                    <div>dρ/dt|<sub>GUA</sub> = η·σ·Φ·(1-ρ) <span class="text-slate-600">// Social Contagion</span></div>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-300 mb-2">Current Configuration</h3>
+                <div id="config-summary" class="text-xs space-y-1">
+                    System in low-density steady state, IMSB dominant. Increase σ above 0.5 to observe phase transition.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // CMS Simulation Core
+        class CMSSimulation {
+            constructor() {
+                this.agents = [];
+                this.params = {
+                    alpha: 0.5,  // VRA-1 jump speed
+                    beta: 0.1,   // VRA-2 stabilization
+                    gamma: 0.3,  // RFA-2 rice-planting reinforcement
+                    eta: 0.4,    // GUA-1 social contagion
+                    sigma: 0.3,  // Social density
+                    sigmaC: 0.5  // Critical density
+                };
+                this.time = 0;
+                this.history = [];
+                this.maxHistory = 200;
+                this.isRunning = false;
+                this.networkCanvas = document.getElementById('network-canvas');
+                this.ctx = this.networkCanvas.getContext('2d');
+                this.selectedAgent = null;
+                
+                this.resizeCanvas();
+                this.initAgents(15);
+                this.setupChart();
+                
+                window.addEventListener('resize', () => this.resizeCanvas());
+                this.networkCanvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            }
+
+            resizeCanvas() {
+                const rect = this.networkCanvas.parentElement.getBoundingClientRect();
+                this.networkCanvas.width = rect.width - 40;
+                this.networkCanvas.height = rect.height - 60;
+            }
+
+            initAgents(n) {
+                this.agents = [];
+                const centerX = this.networkCanvas.width / 2;
+                const centerY = this.networkCanvas.height / 2;
+                const radius = Math.min(centerX, centerY) * 0.7;
+                
+                for (let i = 0; i < n; i++) {
+                    const angle = (i / n) * Math.PI * 2;
+                    this.agents.push({
+                        id: i,
+                        x: centerX + Math.cos(angle) * radius + (Math.random() - 0.5) * 50,
+                        y: centerY + Math.sin(angle) * radius + (Math.random() - 0.5) * 50,
+                        rho: Math.random() * 0.4, // Start mostly IMSB (<0.5)
+                        vx: 0,
+                        vy: 0,
+                        lastVampirism: -100,
+                        ricePlanting: false,
+                        neighbors: []
+                    });
+                }
+                this.updateNeighbors();
+            }
+
+            updateNeighbors() {
+                // Update network connections based on social density sigma
+                const n = this.agents.length;
+                for (let i = 0; i < n; i++) {
+                    this.agents[i].neighbors = [];
+                    for (let j = 0; j < n; j++) {
+                        if (i !== j) {
+                            const dist = Math.hypot(
+                                this.agents[i].x - this.agents[j].x,
+                                this.agents[i].y - this.agents[j].y
+                            );
+                            const maxDist = Math.min(this.networkCanvas.width, this.networkCanvas.height) * 0.4;
+                            const prob = this.params.sigma * (1 - dist / maxDist);
+                            if (Math.random() < prob || dist < maxDist * 0.3) {
+                                this.agents[i].neighbors.push(j);
+                            }
+                        }
+                    }
+                }
+            }
+
+            computeUnconsciousField(agent) {
+                // Φ(a,t) = average of neighbors' rho
+                if (agent.neighbors.length === 0) return 0;
+                let sum = 0;
+                agent.neighbors.forEach(idx => {
+                    sum += this.agents[idx].rho;
+                });
+                return sum / agent.neighbors.length;
+            }
+
+            step(dt = 0.05) {
+                const newRhos = [];
+                
+                this.agents.forEach((agent, idx) => {
+                    let drho = 0;
+                    
+                    // 1. VRA-1: Vampirism jump (if recent vampirism occurred)
+                    if (this.time - agent.lastVampirism < 5) {
+                        const resourceEffect = 0.5; // normalized resource amount
+                        drho += this.params.alpha * resourceEffect * (1 - agent.rho);
+                    }
+                    
+                    // 2. VRA-2: Entitled success stabilization (slow drift to IMSB)
+                    if (agent.rho > 0.5) {
+                        drho -= this.params.beta * (agent.rho - 0.3);
+                    }
+                    
+                    // 3. RFA-1: Rice-planting enforcement (when IMNB)
+                    if (agent.rho > 0.5 && Math.random() < 0.1) {
+                        agent.ricePlanting = true;
+                    }
+                    
+                    // 4. RFA-2: Rice-planting failure reinforces IMNB (logistic)
+                    if (agent.ricePlanting && Math.random() < 0.2) {
+                        drho += this.params.gamma * agent.rho * (1 - agent.rho);
+                        agent.ricePlanting = false; // Reset after failure
+                    }
+                    
+                    // 5. GUA-1: Social contagion from unconscious field
+                    const phi = this.computeUnconsciousField(agent);
+                    const socialDensity = Math.min(agent.neighbors.length / 5, 2); // normalized σ
+                    drho += this.params.eta * socialDensity * phi * (1 - agent.rho);
+                    
+                    // 6. Random noise (EA-1 stochastic component)
+                    drho += (Math.random() - 0.5) * 0.02;
+                    
+                    // Clamp and update
+                    let newRho = agent.rho + drho * dt;
+                    newRho = Math.max(0, Math.min(1, newRho));
+                    newRhos.push(newRho);
+                });
+                
+                // Update all agents
+                this.agents.forEach((agent, idx) => {
+                    agent.rho = newRhos[idx];
+                });
+                
+                // Update statistics
+                this.updateStatistics();
+                
+                // Record history
+                if (this.time % 5 === 0) {
+                    const avgRho = this.agents.reduce((a, b) => a + b.rho, 0) / this.agents.length;
+                    this.history.push({
+                        time: this.time,
+                        mean: avgRho,
+                        imnbRatio: this.agents.filter(a => a.rho > 0.5).length / this.agents.length,
+                        variance: this.computeVariance()
+                    });
+                    if (this.history.length > this.maxHistory) this.history.shift();
+                    this.updateChart();
+                }
+                
+                this.time++;
+                this.draw();
+            }
+
+            computeVariance() {
+                const mean = this.agents.reduce((a, b) => a + b.rho, 0) / this.agents.length;
+                return this.agents.reduce((a, b) => a + Math.pow(b.rho - mean, 2), 0) / this.agents.length;
+            }
+
+            updateStatistics() {
+                const mean = this.agents.reduce((a, b) => a + b.rho, 0) / this.agents.length;
+                const imnbCount = this.agents.filter(a => a.rho > 0.5).length;
+                const imnbRatio = imnbCount / this.agents.length;
+                const variance = this.computeVariance();
+                
+                // Update DOM
+                document.getElementById('stat-mean-rho').textContent = mean.toFixed(2);
+                document.getElementById('stat-variance').textContent = `Var: ${variance.toFixed(3)}`;
+                document.getElementById('stat-imnb-ratio').textContent = `${(imnbRatio * 100).toFixed(0)}%`;
+                document.getElementById('imnb-bar').style.width = `${imnbRatio * 100}%`;
+                
+                // Entropy calculation (bimodal distribution measure)
+                const p = imnbRatio;
+                const entropy = p > 0 && p < 1 ? -(p * Math.log2(p) + (1-p) * Math.log2(1-p)) : 0;
+                document.getElementById('stat-entropy').textContent = entropy.toFixed(2);
+                
+                // Attractor state
+                let attractor = "Mixed";
+                let statusColor = "text-yellow-400";
+                if (imnbRatio > 0.8) {
+                    attractor = "IMNB Global Attractor";
+                    statusColor = "text-red-400";
+                    document.getElementById('phase-alert').classList.remove('hidden');
+                    document.getElementById('system-status').textContent = "IMNB Phase State";
+                    document.getElementById('system-status').className = "text-lg font-bold text-red-400";
+                } else if (imnbRatio < 0.2) {
+                    attractor = "IMSB Steady State";
+                    statusColor = "text-emerald-400";
+                    document.getElementById('phase-alert').classList.add('hidden');
+                    document.getElementById('system-status').textContent = "IMSB Stable State";
+                    document.getElementById('system-status').className = "text-lg font-bold text-emerald-400";
+                } else {
+                    document.getElementById('phase-alert').classList.add('hidden');
+                    document.getElementById('system-status').textContent = "Critical Transition Zone";
+                    document.getElementById('system-status').className = "text-lg font-bold text-yellow-400";
+                }
+                document.getElementById('attractor-state').textContent = `Attractor: ${attractor}`;
+                document.getElementById('attractor-state').className = `text-xs mt-1 ${statusColor}`;
+                
+                // Update sigma status
+                const sigmaStatus = document.getElementById('density-status');
+                const sigmaBar = document.getElementById('sigma-bar');
+                if (this.params.sigma > this.params.sigmaC) {
+                    sigmaStatus.textContent = "σ > σc (Supercritical)";
+                    sigmaStatus.className = "text-sm font-bold text-red-400";
+                    sigmaBar.className = "h-full bg-red-500 transition-all duration-500";
+                } else {
+                    sigmaStatus.textContent = "σ < σc (Subcritical)";
+                    sigmaStatus.className = "text-sm font-bold text-emerald-400";
+                    sigmaBar.className = "h-full bg-emerald-400 transition-all duration-500";
+                }
+                sigmaBar.style.width = `${(this.params.sigma / 1) * 100}%`;
+            }
+
+            triggerVampirism(agentIdx) {
+                if (agentIdx >= 0 && agentIdx < this.agents.length) {
+                    this.agents[agentIdx].lastVampirism = this.time;
+                    // Visual effect
+                    this.draw();
+                }
+            }
+
+            triggerIsolation() {
+                // Topological tearing: suddenly drop social density
+                this.params.sigma = 0.1;
+                document.getElementById('sigma').value = 0.1;
+                document.getElementById('val-sigma').textContent = "0.1";
+                this.updateNeighbors();
+                
+                // Visual feedback
+                document.body.style.background = "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)";
+                setTimeout(() => {
+                    document.body.style.background = "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)";
+                }, 1000);
+            }
+
+            forceRicePlanting() {
+                this.agents.forEach(agent => {
+                    if (agent.rho > 0.5) {
+                        agent.ricePlanting = true;
+                    }
+                });
+            }
+
+            addAgent() {
+                const newId = this.agents.length;
+                this.agents.push({
+                    id: newId,
+                    x: Math.random() * this.networkCanvas.width,
+                    y: Math.random() * this.networkCanvas.height,
+                    rho: 0.2,
+                    vx: 0,
+                    vy: 0,
+                    lastVampirism: -100,
+                    ricePlanting: false,
+                    neighbors: []
+                });
+                this.updateNeighbors();
+            }
+
+            handleCanvasClick(e) {
+                const rect = this.networkCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Find clicked agent
+                this.agents.forEach((agent, idx) => {
+                    const dist = Math.hypot(agent.x - x, agent.y - y);
+                    if (dist < 20) {
+                        this.triggerVampirism(idx);
+                        // Show tooltip or effect
+                        const effect = document.createElement('div');
+                        effect.className = 'absolute text-red-400 font-bold text-sm pointer-events-none vampirism-effect';
+                        effect.style.left = e.clientX + 'px';
+                        effect.style.top = e.clientY + 'px';
+                        effect.textContent = '🧛 Vampirism';
+                        document.body.appendChild(effect);
+                        setTimeout(() => effect.remove(), 1000);
+                    }
+                });
+            }
+
+            draw() {
+                const ctx = this.ctx;
+                const width = this.networkCanvas.width;
+                const height = this.networkCanvas.height;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw connections
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+                ctx.lineWidth = 1;
+                this.agents.forEach(agent => {
+                    agent.neighbors.forEach(neighborIdx => {
+                        if (neighborIdx > agent.id) { // Draw once
+                            const neighbor = this.agents[neighborIdx];
+                            ctx.beginPath();
+                            ctx.moveTo(agent.x, agent.y);
+                            ctx.lineTo(neighbor.x, neighbor.y);
+                            ctx.stroke();
+                        }
+                    });
+                });
+                
+                // Draw agents
+                this.agents.forEach(agent => {
+                    const isIMNB = agent.rho > 0.5;
+                    const radius = 8 + agent.rho * 8;
+                    
+                    // Glow effect
+                    const gradient = ctx.createRadialGradient(
+                        agent.x, agent.y, 0,
+                        agent.x, agent.y, radius * 2
+                    );
+                    if (isIMNB) {
+                        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.6)');
+                        gradient.addColorStop(1, 'rgba(239, 68, 68, 0)');
+                    } else {
+                        gradient.addColorStop(0, 'rgba(34, 197, 94, 0.6)');
+                        gradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+                    }
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(agent.x, agent.y, radius * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Core
+                    ctx.fillStyle = isIMNB ? '#ef4444' : '#22c55e';
+                    ctx.beginPath();
+                    ctx.arc(agent.x, agent.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Border
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Show rho value on hover or if selected
+                    if (agent === this.selectedAgent) {
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '12px sans-serif';
+                        ctx.fillText(`ρ=${agent.rho.toFixed(2)}`, agent.x + 15, agent.y - 15);
+                    }
+                    
+                    // Rice-planting indicator
+                    if (agent.ricePlanting) {
+                        ctx.fillStyle = '#eab308';
+                        ctx.beginPath();
+                        ctx.arc(agent.x - radius, agent.y - radius, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+            }
+
+            setupChart() {
+                const ctx = document.getElementById('time-series').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Average Rating E[ρ]',
+                            data: [],
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'IMNB Ratio',
+                            data: [],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: '#94a3b8' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                ticks: { color: '#64748b' },
+                                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                min: 0,
+                                max: 1,
+                                ticks: { color: '#64748b' },
+                                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 0,
+                                max: 1,
+                                ticks: { color: '#64748b' },
+                                grid: { drawOnChartArea: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            updateChart() {
+                if (!this.chart) return;
+                this.chart.data.labels = this.history.map(h => h.time);
+                this.chart.data.datasets[0].data = this.history.map(h => h.mean);
+                this.chart.data.datasets[1].data = this.history.map(h => h.imnbRatio);
+                this.chart.update('none');
+            }
+
+            updateParameter(name, value) {
+                this.params[name] = parseFloat(value);
+                if (name === 'sigma') {
+                    this.updateNeighbors();
+                }
+                this.updateConfigSummary();
+            }
+
+            updateConfigSummary() {
+                const summary = document.getElementById('config-summary');
+                if (this.params.sigma > this.params.sigmaC) {
+                    summary.innerHTML = `<span class="text-red-400">⚠️ Supercritical State:</span> GUA-2 triggered. System expected to rapidly converge to IMNB attractor (ρ→1). CM-2 Impossibility Theorem conditions satisfied.`;
+                } else if (this.params.alpha > 1.0) {
+                    summary.innerHTML = `<span class="text-yellow-400">⚡ High Vampirism Coefficient:</span> Any vampirism event will cause drastic rating jumps (VRA-1). Observe phase transition threshold.`;
+                } else {
+                    summary.innerHTML = `System in low-density steady state, IMSB dominant. Increase σ above ${this.params.sigmaC} to observe phase transition. Current social contagion η=${this.params.eta}.`;
+                }
+            }
+        }
+
+        // Global sim instance
+        let sim = new CMSSimulation();
+        let animationId = null;
+
+        function updateParam(name, value) {
+            document.getElementById(`val-${name}`).textContent = value;
+            sim.updateParameter(name === 'sigmaC' ? 'sigmaC' : name, value);
+        }
+
+        function toggleSimulation() {
+            const btn = document.getElementById('play-btn');
+            if (sim.isRunning) {
+                sim.isRunning = false;
+                cancelAnimationFrame(animationId);
+                btn.textContent = 'Resume';
+                btn.className = 'px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold transition-all';
+            } else {
+                sim.isRunning = true;
+                btn.textContent = 'Pause';
+                btn.className = 'px-6 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg font-semibold transition-all';
+                runLoop();
+            }
+        }
+
+        function runLoop() {
+            if (!sim.isRunning) return;
+            sim.step();
+            animationId = requestAnimationFrame(runLoop);
+        }
+
+        function resetSimulation() {
+            sim.isRunning = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById('play-btn').textContent = 'Start Simulation';
+            document.getElementById('play-btn').className = 'px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition-all';
+            sim = new CMSSimulation();
+            sim.draw();
+        }
+
+        function triggerEvent(type) {
+            switch(type) {
+                case 'vampirism':
+                    // Random agent triggers vampirism
+                    const idx = Math.floor(Math.random() * sim.agents.length);
+                    sim.triggerVampirism(idx);
+                    break;
+                case 'isolation':
+                    sim.triggerIsolation();
+                    break;
+                case 'riceplant':
+                    sim.forceRicePlanting();
+                    break;
+                case 'add':
+                    sim.addAgent();
+                    break;
+            }
+        }
+
+        function addAgent() {
+            sim.addAgent();
+        }
+
+        // Initial draw
+        sim.draw();
+        sim.updateStatistics();
+
+        // Auto-start demonstration
+        setTimeout(() => {
+            if (!sim.isRunning) toggleSimulation();
+        }, 500);
+    </script>
+</body>
+</html>
