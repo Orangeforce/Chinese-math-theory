@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMS 社会动力学模拟器 | Chinese Mathematical System Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Serif+SC:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Serif SC', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+        }
+        
+        .parameter-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #334155;
+            outline: none;
+        }
+        
+        .parameter-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .parameter-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        
+        .agent-node {
+            transition: all 0.3s ease;
+        }
+        
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .math-font {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        
+        .vampirism-effect {
+            animation: pulse-ring 0.6s ease-out;
+        }
+        
+        .awakening-effect {
+            animation: pulse-ring 0.8s ease-out;
+            color: #34d399;
+        }
+        
+        .phase-transition-alert {
+            animation: flash 2s infinite;
+        }
+        
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body class="min-h-screen grid-bg">
+
+    <!-- Header -->
+    <header class="p-6 border-b border-slate-700 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    CMS 社会动力学模拟器
+                </h1>
+                <p class="text-sm text-slate-400 mt-1">Chinese Mathematical System: Vampirism & Rice-planting Dynamics</p>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div class="text-right">
+                    <div class="text-xs text-slate-400">系统状态</div>
+                    <div id="system-status" class="text-lg font-bold text-emerald-400">IMSB 稳定态</div>
+                </div>
+                <button onclick="toggleSimulation()" id="play-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition-all">
+                    开始模拟
+                </button>
+                <button onclick="resetSimulation()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all">
+                    重置
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Panel: Parameters -->
+        <div class="space-y-4">
+            <!-- Core Parameters -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-400 rounded-full"></span>
+                    核心参数控制
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>文化系数 α (VRA-1)</span>
+                            <span class="math-font text-blue-400" id="val-alpha">0.5</span>
+                        </label>
+                        <input type="range" min="0" max="2" step="0.1" value="0.5" class="parameter-slider" id="alpha" oninput="updateParam('alpha', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">吸血导致的评级跃迁速度</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>稳定系数 β (VRA-2)</span>
+                            <span class="math-font text-green-400" id="val-beta">0.1</span>
+                        </label>
+                        <input type="range" min="0.01" max="0.5" step="0.01" value="0.1" class="parameter-slider" id="beta" oninput="updateParam('beta', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">配得成功的收敛速度</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>稻米强化 γ (RFA-2)</span>
+                            <span class="math-font text-yellow-400" id="val-gamma">0.3</span>
+                        </label>
+                        <input type="range" min="0" max="1" step="0.05" value="0.3" class="parameter-slider" id="gamma" oninput="updateParam('gamma', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">失败后维持IMNB的强度</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>社会传染 η (GUA-1)</span>
+                            <span class="math-font text-purple-400" id="val-eta">0.4</span>
+                        </label>
+                        <input type="range" min="0" max="1" step="0.05" value="0.4" class="parameter-slider" id="eta" oninput="updateParam('eta', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">无意识场催化强度</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Density -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-red-400 rounded-full"></span>
+                    社交密度 σ
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>连接概率</span>
+                            <span class="math-font text-red-400" id="val-sigma">0.3</span>
+                        </label>
+                        <input type="range" min="0" max="1" step="0.05" value="0.3" class="parameter-slider" id="sigma" oninput="updateParam('sigma', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">主体间互动连接密度</div>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm mb-2">
+                            <span>临界密度 σc (GUA-2)</span>
+                            <span class="math-font text-orange-400" id="val-sigmaC">0.5</span>
+                        </label>
+                        <input type="range" min="0.1" max="1" step="0.05" value="0.5" class="parameter-slider" id="sigma-c" oninput="updateParam('sigmaC', this.value)">
+                        <div class="text-xs text-slate-500 mt-1">相变临界阈值</div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-slate-800/50 rounded border border-slate-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm">当前密度状态:</span>
+                            <span id="density-status" class="text-sm font-bold text-emerald-400">σ < σc (低密度)</span>
+                        </div>
+                        <div class="w-full bg-slate-700 h-2 rounded-full mt-2 overflow-hidden">
+                            <div id="sigma-bar" class="h-full bg-emerald-400 transition-all duration-500" style="width: 30%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                    预设场景
+                </h2>
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <button onclick="triggerEvent('presetMild')" class="p-2 bg-green-900/30 border border-green-700/50 hover:bg-green-900/50 rounded-lg text-xs transition-all text-green-200">
+                        🌱 轻度
+                    </button>
+                    <button onclick="triggerEvent('presetModerate')" class="p-2 bg-yellow-900/30 border border-yellow-700/50 hover:bg-yellow-900/50 rounded-lg text-xs transition-all text-yellow-200">
+                        🔥 中度
+                    </button>
+                    <button onclick="triggerEvent('presetSevere')" class="p-2 bg-red-900/30 border border-red-700/50 hover:bg-red-900/50 rounded-lg text-xs transition-all text-red-200">
+                        ⚠️ 重度
+                    </button>
+                </div>
+                <div id="preset-description" class="text-xs text-slate-400 text-center p-2 bg-slate-800/50 rounded border border-slate-700">
+                    选择上方预设快速设置参数
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-4">干预操作</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="triggerEvent('vampirism')" class="p-2 bg-red-900/30 border border-red-700/50 hover:bg-red-900/50 rounded-lg text-xs transition-all text-red-200">
+                        🧛 吸血
+                    </button>
+                    <button onclick="triggerEvent('isolation')" class="p-2 bg-blue-900/30 border border-blue-700/50 hover:bg-blue-900/50 rounded-lg text-xs transition-all text-blue-200">
+                        🏝️ 隔离
+                    </button>
+                    <button onclick="triggerEvent('awaken')" class="p-2 bg-emerald-900/30 border border-emerald-700/50 hover:bg-emerald-900/50 rounded-lg text-xs transition-all text-emerald-200">
+                        💡 随机清醒
+                    </button>
+                    <button onclick="triggerEvent('awakenMode')" id="awaken-mode-btn" class="p-2 bg-purple-900/30 border border-purple-700/50 hover:bg-purple-900/50 rounded-lg text-xs transition-all text-purple-200">
+                        👆 点击清醒
+                    </button>
+                </div>
+                <div class="mt-3">
+                    <button onclick="triggerEvent('ea2Demo')" class="w-full p-3 bg-cyan-900/30 border border-cyan-700/50 hover:bg-cyan-900/50 rounded-lg text-sm transition-all text-cyan-200 mb-2">
+                        🎯 EA-2 完整演示
+                    </button>
+                    <button onclick="triggerEvent('exitMode')" class="w-full p-2 bg-slate-700/50 border border-slate-600/50 hover:bg-slate-700/70 rounded-lg text-xs transition-all text-slate-300">
+                        🚪 退出当前模式
+                    </button>
+                </div>
+                <div class="mt-3 text-xs text-slate-400 space-y-1">
+                    <p>* <span class="text-purple-400">点击清醒</span>：先激活，再点红色节点</p>
+                    <p>* <span class="text-cyan-400">EA-2演示</span>：自动演示觉醒代价全过程</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Visualization -->
+        <div class="lg:col-span-2 space-y-4">
+            <!-- Network Visualization -->
+            <div class="glass-panel p-5 relative h-96">
+                <h2 class="text-lg font-bold mb-2 flex justify-between items-center">
+                    <span>主体互动网络</span>
+                    <div class="flex gap-3 text-xs">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500"></span> IMNB (ρ>0.5)</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-500"></span> IMSB (ρ<0.5)</span>
+                    </div>
+                </h2>
+                <canvas id="network-canvas" class="w-full h-full cursor-crosshair"></canvas>
+                <div id="phase-alert" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-red-500 hidden phase-transition-alert pointer-events-none">
+                    ⚠️ 社会相变发生: IMNB全局吸引子
+                </div>
+            </div>
+
+            <!-- Time Series Chart -->
+            <div class="glass-panel p-5">
+                <h2 class="text-lg font-bold mb-2">群体评级演化轨迹</h2>
+                <div class="h-48">
+                    <canvas id="time-series"></canvas>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="glass-panel p-4 text-center">
+                    <div class="text-3xl font-bold math-font text-blue-400" id="stat-mean-rho">0.25</div>
+                    <div class="text-xs text-slate-400 mt-1">平均评级 E[ρ]</div>
+                    <div class="text-xs text-slate-500 mt-1" id="stat-variance">Var: 0.02</div>
+                </div>
+                <div class="glass-panel p-4 text-center">
+                    <div class="text-3xl font-bold text-red-400" id="stat-imnb-ratio">15%</div>
+                    <div class="text-xs text-slate-400 mt-1">IMNB 比例</div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full mt-2">
+                        <div id="imnb-bar" class="h-full bg-red-500 rounded-full transition-all" style="width: 15%"></div>
+                    </div>
+                </div>
+                <div class="glass-panel p-4 text-center">
+                    <div class="text-3xl font-bold text-purple-400" id="stat-entropy">2.4</div>
+                    <div class="text-xs text-slate-400 mt-1">系统熵 S(t)</div>
+                    <div class="text-xs text-slate-500 mt-1" id="attractor-state">吸引子: 混合</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Theory Reference -->
+    <footer class="max-w-7xl mx-auto p-6 mt-6 border-t border-slate-800 text-sm text-slate-500">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="font-bold text-slate-300 mb-2">动力学方程参考</h3>
+                <div class="font-mono text-xs space-y-1 opacity-80">
+                    <div>dρ/dt|<sub>VRA</sub> = α·(μ/μ<sub>ref</sub>)·(1-ρ) <span class="text-slate-600">// 吸血跃迁</span></div>
+                    <div>dρ/dt|<sub>RFA</sub> = γ·ρ·(1-ρ) <span class="text-slate-600">// 稻米维持</span></div>
+                    <div>dρ/dt|<sub>GUA</sub> = η·σ·Φ·(1-ρ) <span class="text-slate-600">// 社会传染</span></div>
+                    <div>Δρ<sub>neighbor</sub> ↑ when ρ<sub>self</sub> ↓ <span class="text-slate-600">// EA-2 觉醒代价</span></div>
+                </div>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-300 mb-2">当前配置</h3>
+                <div id="config-summary" class="text-xs space-y-1">
+                    系统处于低密度稳态，IMSB占主导。增加σ超过0.5观察相变。
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // CMS Simulation Core
+        class CMSSimulation {
+            constructor() {
+                this.agents = [];
+                this.params = {
+                    alpha: 0.5,  // VRA-1 jump speed
+                    beta: 0.1,   // VRA-2 stabilization
+                    gamma: 0.3,  // RFA-2 rice-planting reinforcement
+                    eta: 0.4,    // GUA-1 social contagion
+                    sigma: 0.3,  // Social density
+                    sigmaC: 0.5  // Critical density
+                };
+                this.time = 0;
+                this.history = [];
+                this.maxHistory = 200;
+                this.isRunning = false;
+                this.networkCanvas = document.getElementById('network-canvas');
+                this.ctx = this.networkCanvas.getContext('2d');
+                this.selectedAgent = null;
+                this.selectMode = false;  // EA-2 选择模式
+
+                this.resizeCanvas();
+                this.initAgents(15);
+                this.setupChart();
+
+                window.addEventListener('resize', () => this.resizeCanvas());
+                this.networkCanvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            }
+
+            resizeCanvas() {
+                const rect = this.networkCanvas.parentElement.getBoundingClientRect();
+                this.networkCanvas.width = rect.width - 40;
+                this.networkCanvas.height = rect.height - 60;
+            }
+
+            initAgents(n) {
+                this.agents = [];
+                const centerX = this.networkCanvas.width / 2;
+                const centerY = this.networkCanvas.height / 2;
+                const radius = Math.min(centerX, centerY) * 0.7;
+
+                for (let i = 0; i < n; i++) {
+                    const angle = (i / n) * Math.PI * 2;
+                    this.agents.push({
+                        id: i,
+                        x: centerX + Math.cos(angle) * radius + (Math.random() - 0.5) * 50,
+                        y: centerY + Math.sin(angle) * radius + (Math.random() - 0.5) * 50,
+                        rho: Math.random() * 0.4, // Start mostly IMSB (<0.5)
+                        vx: 0,
+                        vy: 0,
+                        lastVampirism: -100,
+                        ricePlanting: false,
+                        neighbors: [],
+                        // EA-2 相关属性
+                        wasAwakened: false,
+                        awakeningTime: -100,
+                        comparativeAnxietyUntil: -100
+                    });
+                }
+                this.updateNeighbors();
+            }
+
+            updateNeighbors() {
+                // Update network connections based on social density sigma
+                const n = this.agents.length;
+                for (let i = 0; i < n; i++) {
+                    this.agents[i].neighbors = [];
+                    for (let j = 0; j < n; j++) {
+                        if (i !== j) {
+                            const dist = Math.hypot(
+                                this.agents[i].x - this.agents[j].x,
+                                this.agents[i].y - this.agents[j].y
+                            );
+                            const maxDist = Math.min(this.networkCanvas.width, this.networkCanvas.height) * 0.4;
+                            const prob = this.params.sigma * (1 - dist / maxDist);
+                            if (Math.random() < prob || dist < maxDist * 0.3) {
+                                this.agents[i].neighbors.push(j);
+                            }
+                        }
+                    }
+                }
+            }
+
+            computeUnconsciousField(agent) {
+                // Φ(a,t) = average of neighbors' rho
+                if (agent.neighbors.length === 0) return 0;
+                let sum = 0;
+                agent.neighbors.forEach(idx => {
+                    sum += this.agents[idx].rho;
+                });
+                return sum / agent.neighbors.length;
+            }
+
+            // 根据rho值返回连续颜色 (0=绿色, 0.5=黄色, 1=红色)
+            getRhoColor(rho) {
+                // HSL: 绿色(120) -> 黄色(60) -> 红色(0)
+                // 但我们在0.5处设置黄色，所以需要分段
+                let hue;
+                if (rho <= 0.5) {
+                    // 0 -> 0.5 : 绿色(120) -> 黄色(60)
+                    hue = 120 - (rho / 0.5) * 60;
+                } else {
+                    // 0.5 -> 1 : 黄色(60) -> 红色(0)
+                    hue = 60 - ((rho - 0.5) / 0.5) * 60;
+                }
+                
+                // 饱和度根据rho调整，越极端越饱和
+                const saturation = 70 + Math.abs(rho - 0.5) * 60; // 70% - 100%
+                const lightness = 50 - Math.abs(rho - 0.5) * 20;  // 50% - 40% (越极端越深)
+                
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            }
+            
+            // 获取发光颜色（更透明版本）
+            getGlowColor(rho) {
+                let hue;
+                if (rho <= 0.5) {
+                    hue = 120 - (rho / 0.5) * 60;
+                } else {
+                    hue = 60 - ((rho - 0.5) / 0.5) * 60;
+                }
+                return `hsla(${hue}, 80%, 60%, 0.6)`;
+            }
+
+            step(dt = 0.05) {
+                const newRhos = [];
+
+                this.agents.forEach((agent, idx) => {
+                    let drho = 0;
+
+                    // 1. VRA-1: Vampirism jump (if recent vampirism occurred)
+                    if (this.time - agent.lastVampirism < 5) {
+                        const resourceEffect = 0.5; // normalized resource amount
+                        drho += this.params.alpha * resourceEffect * (1 - agent.rho);
+                    }
+
+                    // 2. VRA-2: Entitled success stabilization (slow drift to IMSB)
+                    // EA-2 保护期内的清醒者不受此影响
+                    if (agent.rho > 0.5 && !this.isInAwakeningProtection(agent)) {
+                        drho -= this.params.beta * (agent.rho - 0.3);
+                    }
+
+                    // 3. RFA-1: Rice-planting enforcement (when IMNB)
+                    if (agent.rho > 0.5 && Math.random() < 0.1) {
+                        agent.ricePlanting = true;
+                    }
+
+                    // 4. RFA-2: Rice-planting failure reinforces IMNB (logistic)
+                    if (agent.ricePlanting && Math.random() < 0.2) {
+                        drho += this.params.gamma * agent.rho * (1 - agent.rho);
+                        agent.ricePlanting = false; // Reset after failure
+                    }
+
+                    // 5. GUA-1: Social contagion from unconscious field
+                    // EA-2 保护期：清醒的节点暂时不受社会传染影响
+                    // 处于对比焦虑期的节点受传染更强
+                    const phi = this.computeUnconsciousField(agent);
+                    const socialDensity = Math.min(agent.neighbors.length / 5, 2);
+
+                    if (this.isInAwakeningProtection(agent)) {
+                        // 清醒保护期：暂时隔离社会传染
+                        drho += 0;
+                    } else if (agent.comparativeAnxietyUntil && this.time < agent.comparativeAnxietyUntil) {
+                        // 对比焦虑期：社会传染效果增强 50%
+                        drho += this.params.eta * socialDensity * phi * (1 - agent.rho) * 1.5;
+                    } else {
+                        drho += this.params.eta * socialDensity * phi * (1 - agent.rho);
+                    }
+
+                    // 6. Random noise (EA-1 stochastic component)
+                    drho += (Math.random() - 0.5) * 0.02;
+
+                    // Clamp and update
+                    let newRho = agent.rho + drho * dt;
+                    newRho = Math.max(0, Math.min(1, newRho));
+                    newRhos.push(newRho);
+                });
+
+                // Update all agents
+                this.agents.forEach((agent, idx) => {
+                    agent.rho = newRhos[idx];
+                });
+
+                // Update statistics
+                this.updateStatistics();
+                
+                // Record history
+                if (this.time % 5 === 0) {
+                    const avgRho = this.agents.reduce((a, b) => a + b.rho, 0) / this.agents.length;
+                    this.history.push({
+                        time: this.time,
+                        mean: avgRho,
+                        imnbRatio: this.agents.filter(a => a.rho > 0.5).length / this.agents.length,
+                        variance: this.computeVariance()
+                    });
+                    if (this.history.length > this.maxHistory) this.history.shift();
+                    this.updateChart();
+                }
+                
+                this.time++;
+                this.draw();
+            }
+
+            computeVariance() {
+                const mean = this.agents.reduce((a, b) => a + b.rho, 0) / this.agents.length;
+                return this.agents.reduce((a, b) => a + Math.pow(b.rho - mean, 2), 0) / this.agents.length;
+            }
+
+            updateStatistics() {
+                const mean = this.agents.reduce((a, b) => a + b.rho, 0) / this.agents.length;
+                const imnbCount = this.agents.filter(a => a.rho > 0.5).length;
+                const imnbRatio = imnbCount / this.agents.length;
+                const variance = this.computeVariance();
+                
+                // Update DOM
+                document.getElementById('stat-mean-rho').textContent = mean.toFixed(2);
+                document.getElementById('stat-variance').textContent = `Var: ${variance.toFixed(3)}`;
+                document.getElementById('stat-imnb-ratio').textContent = `${(imnbRatio * 100).toFixed(0)}%`;
+                document.getElementById('imnb-bar').style.width = `${imnbRatio * 100}%`;
+                
+                // Entropy calculation (bimodal distribution measure)
+                const p = imnbRatio;
+                const entropy = p > 0 && p < 1 ? -(p * Math.log2(p) + (1-p) * Math.log2(1-p)) : 0;
+                document.getElementById('stat-entropy').textContent = entropy.toFixed(2);
+                
+                // Attractor state
+                let attractor = "混合";
+                let statusColor = "text-yellow-400";
+                if (imnbRatio > 0.8) {
+                    attractor = "IMNB全局吸引子";
+                    statusColor = "text-red-400";
+                    document.getElementById('phase-alert').classList.remove('hidden');
+                    document.getElementById('system-status').textContent = "IMNB 相变态";
+                    document.getElementById('system-status').className = "text-lg font-bold text-red-400";
+                } else if (imnbRatio < 0.2) {
+                    attractor = "IMSB稳态";
+                    statusColor = "text-emerald-400";
+                    document.getElementById('phase-alert').classList.add('hidden');
+                    document.getElementById('system-status').textContent = "IMSB 稳定态";
+                    document.getElementById('system-status').className = "text-lg font-bold text-emerald-400";
+                } else {
+                    document.getElementById('phase-alert').classList.add('hidden');
+                    document.getElementById('system-status').textContent = "相变临界区";
+                    document.getElementById('system-status').className = "text-lg font-bold text-yellow-400";
+                }
+                document.getElementById('attractor-state').textContent = `吸引子: ${attractor}`;
+                document.getElementById('attractor-state').className = `text-xs mt-1 ${statusColor}`;
+                
+                // Update sigma status
+                const sigmaStatus = document.getElementById('density-status');
+                const sigmaBar = document.getElementById('sigma-bar');
+                if (this.params.sigma > this.params.sigmaC) {
+                    sigmaStatus.textContent = "σ > σc (超临界)";
+                    sigmaStatus.className = "text-sm font-bold text-red-400";
+                    sigmaBar.className = "h-full bg-red-500 transition-all duration-500";
+                } else {
+                    sigmaStatus.textContent = "σ < σc (亚临界)";
+                    sigmaStatus.className = "text-sm font-bold text-emerald-400";
+                    sigmaBar.className = "h-full bg-emerald-400 transition-all duration-500";
+                }
+                sigmaBar.style.width = `${(this.params.sigma / 1) * 100}%`;
+            }
+
+            triggerVampirism(agentIdx) {
+                if (agentIdx >= 0 && agentIdx < this.agents.length) {
+                    this.agents[agentIdx].lastVampirism = this.time;
+                    // Visual effect
+                    this.draw();
+                }
+            }
+
+            // EA-2: Force Awakening - Individual exit from IMNB requires systemic cost
+            // 增强版：增加觉醒保护期，防止效果被瞬间冲淡
+            forceAwakening(agentIdx, showDetails = false) {
+                if (agentIdx >= 0 && agentIdx < this.agents.length) {
+                    const agent = this.agents[agentIdx];
+                    const oldRho = agent.rho;
+
+                    // EA-2 核心：目标从IMNB清醒到IMSB
+                    const newRho = Math.min(0.15, agent.rho * 0.3);  // 降到更低
+                    const deltaRho = newRho - oldRho;
+
+                    // 记录觉醒状态和时间戳（用于觉醒保护期）
+                    agent.rho = newRho;
+                    agent.awakeningTime = this.time;
+                    agent.wasAwakened = true;
+
+                    // EA-2 机制：邻居因"对比焦虑"而自恋增强
+                    let affectedCount = 0;
+                    let totalNeighborIncrease = 0;
+                    const neighborEffects = [];
+
+                    agent.neighbors.forEach(neighborIdx => {
+                        const neighbor = this.agents[neighborIdx];
+                        if (neighbor.rho > 0.5) {
+                            // 对比焦虑强度：与清醒者的差距越大，焦虑越强
+                            const contrastAnxiety = (neighbor.rho - newRho) * 0.25 * this.params.eta;
+                            const increaseAmount = Math.min(0.3, contrastAnxiety);
+                            neighbor.rho = Math.min(1, neighbor.rho + increaseAmount);
+                            neighbor.comparativeAnxietyUntil = this.time + 20;  // 焦虑持续20帧
+                            affectedCount++;
+                            totalNeighborIncrease += increaseAmount;
+                            neighborEffects.push({idx: neighborIdx, increase: increaseAmount});
+                        }
+                    });
+
+                    // 视觉反馈
+                    if (showDetails) {
+                        this.showEA2Effect(agent, neighborEffects);
+                    }
+
+                    console.log(`EA-2 Applied: Agent ${agentIdx} awakened (ρ: ${oldRho.toFixed(2)} → ${newRho.toFixed(2)}, Δ=${deltaRho.toFixed(2)}), ${affectedCount} neighbors affected (total +${totalNeighborIncrease.toFixed(2)})`);
+
+                    this.draw();
+                }
+            }
+
+            showEA2Effect(agent, neighborEffects) {
+                const rect = this.networkCanvas.getBoundingClientRect();
+                const canvasX = rect.left + agent.x;
+                const canvasY = rect.top + agent.y;
+
+                // 主体清醒效果
+                const effect = document.createElement('div');
+                effect.className = 'absolute text-emerald-400 font-bold text-lg pointer-events-none awakening-effect';
+                effect.style.left = canvasX + 'px';
+                effect.style.top = (canvasY - 40) + 'px';
+                effect.style.transform = 'translateX(-50%)';
+                effect.innerHTML = `💡 觉醒 Δρ=${(agent.rho - 0.5).toFixed(2)}`;
+                document.body.appendChild(effect);
+
+                // 邻居焦虑效果
+                neighborEffects.forEach((ne, i) => {
+                    const neighbor = this.agents[ne.idx];
+                    setTimeout(() => {
+                        const nx = rect.left + neighbor.x;
+                        const ny = rect.top + neighbor.y;
+                        const anxiety = document.createElement('div');
+                        anxiety.className = 'absolute text-red-400 font-bold text-sm pointer-events-none vampirism-effect';
+                        anxiety.style.left = nx + 'px';
+                        anxiety.style.top = (ny - 30) + 'px';
+                        anxiety.style.transform = 'translateX(-50%)';
+                        anxiety.textContent = `😰 焦虑 +${ne.increase.toFixed(2)}`;
+                        document.body.appendChild(anxiety);
+                        setTimeout(() => anxiety.remove(), 1200);
+                    }, i * 100);
+                });
+
+                setTimeout(() => effect.remove(), 1500);
+            }
+
+            // EA-2 保护期机制：清醒的节点暂时不受社会传染影响
+            isInAwakeningProtection(agent) {
+                return agent.wasAwakened && (this.time - agent.awakeningTime < 15);
+            }
+
+            triggerIsolation() {
+                // Topological tearing: suddenly drop social density
+                this.params.sigma = 0.1;
+                document.getElementById('sigma').value = 0.1;
+                document.getElementById('val-sigma').textContent = "0.1";
+                this.updateNeighbors();
+                
+                // Visual feedback
+                document.body.style.background = "linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)";
+                setTimeout(() => {
+                    document.body.style.background = "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)";
+                }, 1000);
+            }
+
+            forceRicePlanting() {
+                this.agents.forEach(agent => {
+                    if (agent.rho > 0.5) {
+                        agent.ricePlanting = true;
+                    }
+                });
+            }
+
+            addAgent() {
+                const newId = this.agents.length;
+                this.agents.push({
+                    id: newId,
+                    x: Math.random() * this.networkCanvas.width,
+                    y: Math.random() * this.networkCanvas.height,
+                    rho: 0.2,
+                    vx: 0,
+                    vy: 0,
+                    lastVampirism: -100,
+                    ricePlanting: false,
+                    neighbors: [],
+                    // EA-2 相关属性
+                    wasAwakened: false,
+                    awakeningTime: -100,
+                    comparativeAnxietyUntil: -100
+                });
+                this.updateNeighbors();
+            }
+
+            handleCanvasClick(e) {
+                const rect = this.networkCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Find clicked agent
+                this.agents.forEach((agent, idx) => {
+                    const dist = Math.hypot(agent.x - x, agent.y - y);
+                    if (dist < 25) {  // 扩大点击区域
+                        if (this.selectMode) {
+                            // EA-2 选择模式：清醒该节点
+                            this.selectMode = false;
+                            this.forceAwakening(idx, true);
+                            // 更新按钮状态
+                            const btn = document.querySelector('button[onclick="triggerEvent(\'awakenMode\')"]');
+                            if (btn) {
+                                btn.textContent = '👆 点击清醒(EA-2)';
+                                btn.className = 'p-3 bg-purple-900/30 border border-purple-700/50 hover:bg-purple-900/50 rounded-lg text-sm transition-all text-purple-200';
+                            }
+                        } else {
+                            // 默认：触发吸血
+                            this.triggerVampirism(idx);
+                            // Show tooltip or effect
+                            const effect = document.createElement('div');
+                            effect.className = 'absolute text-red-400 font-bold text-sm pointer-events-none vampirism-effect';
+                            effect.style.left = e.clientX + 'px';
+                            effect.style.top = e.clientY + 'px';
+                            effect.textContent = '🧛 吸血';
+                            document.body.appendChild(effect);
+                            setTimeout(() => effect.remove(), 1000);
+                        }
+                    }
+                });
+            }
+
+            draw() {
+                const ctx = this.ctx;
+                const width = this.networkCanvas.width;
+                const height = this.networkCanvas.height;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw connections
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+                ctx.lineWidth = 1;
+                this.agents.forEach(agent => {
+                    agent.neighbors.forEach(neighborIdx => {
+                        if (neighborIdx > agent.id) {
+                            const neighbor = this.agents[neighborIdx];
+                            ctx.beginPath();
+                            ctx.moveTo(agent.x, agent.y);
+                            ctx.lineTo(neighbor.x, neighbor.y);
+                            ctx.stroke();
+                        }
+                    });
+                });
+                
+                // Draw agents with continuous color and rho labels
+                this.agents.forEach(agent => {
+                    const rho = agent.rho;
+                    const radius = 8 + rho * 8;
+                    const color = this.getRhoColor(rho);
+                    const glowColor = this.getGlowColor(rho);
+                    
+                    // Glow effect (continuous color)
+                    const gradient = ctx.createRadialGradient(
+                        agent.x, agent.y, 0,
+                        agent.x, agent.y, radius * 2
+                    );
+                    gradient.addColorStop(0, glowColor);
+                    gradient.addColorStop(1, glowColor.replace('0.6)', '0)'));
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(agent.x, agent.y, radius * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Core (continuous color based on rho)
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(agent.x, agent.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Border (white for visibility)
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Display rho value above node
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(rho.toFixed(2), agent.x, agent.y - radius - 4);
+                    
+                    // Draw indicator line connecting text to node
+                    ctx.strokeStyle = 'rgba(226, 232, 240, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(agent.x, agent.y - radius - 2);
+                    ctx.lineTo(agent.x, agent.y - radius + 2);
+                    ctx.stroke();
+                    
+                    // Rice-planting indicator (yellow dot)
+                    if (agent.ricePlanting) {
+                        ctx.fillStyle = '#eab308';
+                        ctx.beginPath();
+                        ctx.arc(agent.x - radius, agent.y - radius, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                    
+                    // Highlight if recently vampirized
+                    if (this.time - agent.lastVampirism < 5) {
+                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.arc(agent.x, agent.y, radius + 4, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    // EA-2 觉醒保护期效果（青色光圈）
+                    if (this.isInAwakeningProtection(agent)) {
+                        const protectionProgress = (this.time - agent.awakeningTime) / 15;
+                        ctx.strokeStyle = `rgba(34, 211, 238, ${0.8 * (1 - protectionProgress)})`;
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([4, 4]);
+                        ctx.beginPath();
+                        ctx.arc(agent.x, agent.y, radius + 6, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+
+                    // 对比焦虑期效果（橙色脉动）
+                    if (agent.comparativeAnxietyUntil && this.time < agent.comparativeAnxietyUntil) {
+                        const anxietyProgress = (agent.comparativeAnxietyUntil - this.time) / 20;
+                        ctx.strokeStyle = `rgba(251, 146, 60, ${0.6 * anxietyProgress})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(agent.x, agent.y, radius + 3, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                });
+            }
+
+            setupChart() {
+                const ctx = document.getElementById('time-series').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '平均评级 E[ρ]',
+                            data: [],
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'IMNB 比例',
+                            data: [],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { color: '#94a3b8' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                ticks: { color: '#64748b' },
+                                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                min: 0,
+                                max: 1,
+                                ticks: { color: '#64748b' },
+                                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 0,
+                                max: 1,
+                                ticks: { color: '#64748b' },
+                                grid: { drawOnChartArea: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            updateChart() {
+                if (!this.chart) return;
+                this.chart.data.labels = this.history.map(h => h.time);
+                this.chart.data.datasets[0].data = this.history.map(h => h.mean);
+                this.chart.data.datasets[1].data = this.history.map(h => h.imnbRatio);
+                this.chart.update('none');
+            }
+
+            updateParameter(name, value) {
+                this.params[name] = parseFloat(value);
+                if (name === 'sigma') {
+                    this.updateNeighbors();
+                }
+                this.updateConfigSummary();
+            }
+
+            updateConfigSummary() {
+                const summary = document.getElementById('config-summary');
+                if (this.params.sigma > this.params.sigmaC) {
+                    summary.innerHTML = `<span class="text-red-400">⚠️ 超临界状态：</span>GUA-2触发，预计系统将快速收敛到IMNB吸引子(ρ→1)。CM-2不可能性定理条件满足。`;
+                } else if (this.params.alpha > 1.0) {
+                    summary.innerHTML = `<span class="text-yellow-400">⚡ 高吸血系数：</span>任何吸血事件都将导致剧烈的评级跃迁(VRA-1)，建议观察相变阈值。`;
+                } else {
+                    summary.innerHTML = `系统处于低密度稳态，IMSB占主导。增加σ超过${this.params.sigmaC}观察相变。当前社会传染系数η=${this.params.eta}。`;
+                }
+            }
+        }
+
+        // Global sim instance
+        let sim = new CMSSimulation();
+        let animationId = null;
+
+        function updateParam(name, value) {
+            const displayId = name === 'sigmaC' ? 'val-sigmaC' : `val-${name}`;
+            document.getElementById(displayId).textContent = value;
+            sim.updateParameter(name, value);
+        }
+
+        function toggleSimulation() {
+            const btn = document.getElementById('play-btn');
+            if (sim.isRunning) {
+                sim.isRunning = false;
+                cancelAnimationFrame(animationId);
+                btn.textContent = '继续';
+                btn.className = 'px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold transition-all';
+            } else {
+                sim.isRunning = true;
+                btn.textContent = '暂停';
+                btn.className = 'px-6 py-2 bg-yellow-600 hover:bg-yellow-500 rounded-lg font-semibold transition-all';
+                runLoop();
+            }
+        }
+
+        function runLoop() {
+            if (!sim.isRunning) return;
+            sim.step();
+            animationId = requestAnimationFrame(runLoop);
+        }
+
+        function resetSimulation() {
+            sim.isRunning = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById('play-btn').textContent = '开始模拟';
+            document.getElementById('play-btn').className = 'px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold transition-all';
+            sim = new CMSSimulation();
+            sim.draw();
+        }
+
+        function triggerEvent(type) {
+            switch(type) {
+                case 'vampirism':
+                    const idx = Math.floor(Math.random() * sim.agents.length);
+                    sim.triggerVampirism(idx);
+                    break;
+                case 'isolation':
+                    sim.triggerIsolation();
+                    break;
+                case 'riceplant':
+                    sim.forceRicePlanting();
+                    break;
+                case 'awaken':
+                    const awakenIdx = Math.floor(Math.random() * sim.agents.length);
+                    sim.forceAwakening(awakenIdx);
+                    const effect = document.createElement('div');
+                    effect.className = 'absolute text-emerald-400 font-bold text-lg pointer-events-none awakening-effect';
+                    effect.style.left = '50%';
+                    effect.style.top = '50%';
+                    effect.style.transform = 'translate(-50%, -50%)';
+                    effect.textContent = '💡 EA-2: 个体觉醒引发集体焦虑';
+                    document.body.appendChild(effect);
+                    setTimeout(() => effect.remove(), 1500);
+                    break;
+                case 'awakenMode':
+                    sim.selectMode = !sim.selectMode;
+                    const btn = document.getElementById('awaken-mode-btn');
+                    if (btn) {
+                        if (sim.selectMode) {
+                            btn.textContent = '⏸ 选择中(再点取消)';
+                            btn.className = 'p-2 bg-emerald-900/50 border border-emerald-500/50 rounded-lg text-xs transition-all text-emerald-200';
+                        } else {
+                            btn.textContent = '👆 点击清醒';
+                            btn.className = 'p-2 bg-purple-900/30 border border-purple-700/50 hover:bg-purple-900/50 rounded-lg text-xs transition-all text-purple-200';
+                        }
+                    }
+                    break;
+                case 'ea2Demo':
+                    // EA-2 演示模式：设置最佳参数并触发
+                    // 1. 设置参数
+                    sim.params.eta = 0.85;      // 高社会传染
+                    sim.params.gamma = 0.6;     // 高稻米强化，保持红色
+                    sim.params.sigma = 0.65;    // 高密度，更多连接
+                    sim.params.alpha = 0.8;     // 吸血效应增强
+                    sim.params.beta = 0.05;     // 降低收敛速度
+
+                    // 更新UI
+                    document.getElementById('eta').value = 0.85;
+                    document.getElementById('val-eta').textContent = '0.85';
+                    document.getElementById('gamma').value = 0.6;
+                    document.getElementById('val-gamma').textContent = '0.6';
+                    document.getElementById('sigma').value = 0.65;
+                    document.getElementById('val-sigma').textContent = '0.65';
+
+                    sim.updateNeighbors();
+
+                    // 2. 先触发一些吸血，让更多节点变红
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => {
+                            const vIdx = Math.floor(Math.random() * sim.agents.length);
+                            sim.triggerVampirism(vIdx);
+                        }, i * 300);
+                    }
+
+                    // 3. 等待片刻后执行 EA-2
+                    setTimeout(() => {
+                        // 找一个 rho 最高的红色节点觉醒
+                        let maxRhoIdx = 0;
+                        let maxRho = 0;
+                        sim.agents.forEach((a, i) => {
+                            if (a.rho > maxRho && a.rho > 0.5) {
+                                maxRho = a.rho;
+                                maxRhoIdx = i;
+                            }
+                        });
+
+                        sim.forceAwakening(maxRhoIdx, true);
+
+                        // 4. 运行几秒展示效果
+                        setTimeout(() => {
+                            const effect2 = document.createElement('div');
+                            effect2.className = 'absolute text-yellow-400 font-bold text-xl pointer-events-none';
+                            effect2.style.left = '50%';
+                            effect2.style.top = '85%';
+                            effect2.style.transform = 'translateX(-50%)';
+                            effect2.textContent = '📊 观察：目标变绿，邻居加速变红 → IMNB比例回升';
+                            document.body.appendChild(effect2);
+                            setTimeout(() => effect2.remove(), 3000);
+                        }, 1000);
+                    }, 1500);
+
+                    // 演示模式提示
+                    const demoTip = document.createElement('div');
+                    demoTip.className = 'absolute top-20 left-1/2 transform -translate-x-1/2 bg-slate-800/90 border border-purple-500/50 px-4 py-2 rounded-lg text-sm text-purple-300 pointer-events-none';
+                    demoTip.textContent = '🎯 EA-2 演示模式已激活：η=0.85, γ=0.6, σ=0.65';
+                    document.body.appendChild(demoTip);
+                    setTimeout(() => demoTip.remove(), 3000);
+                    break;
+                case 'presetMild':
+                    // 轻度：低社交压力
+                    sim.params.eta = 0.3;
+                    sim.params.gamma = 0.2;
+                    sim.params.sigma = 0.25;
+                    sim.params.alpha = 0.3;
+                    sim.params.beta = 0.15;
+                    updateSliderUI('eta', 0.3);
+                    updateSliderUI('gamma', 0.2);
+                    updateSliderUI('sigma', 0.25);
+                    updateSliderUI('alpha', 0.3);
+                    updateSliderUI('beta', 0.15);
+                    sim.updateNeighbors();
+                    showPresetTip('🌱 轻度模式', '低社交压力，IMSB稳定，清醒代价较小');
+                    break;
+                case 'presetModerate':
+                    // 中度：临界状态
+                    sim.params.eta = 0.5;
+                    sim.params.gamma = 0.4;
+                    sim.params.sigma = 0.5;
+                    sim.params.alpha = 0.5;
+                    sim.params.beta = 0.1;
+                    updateSliderUI('eta', 0.5);
+                    updateSliderUI('gamma', 0.4);
+                    updateSliderUI('sigma', 0.5);
+                    updateSliderUI('alpha', 0.5);
+                    updateSliderUI('beta', 0.1);
+                    sim.updateNeighbors();
+                    showPresetTip('🔥 中度模式', '临界状态，IMNB与IMSB共存，EA-2效果明显');
+                    break;
+                case 'presetSevere':
+                    // 重度：高压社会
+                    sim.params.eta = 0.8;
+                    sim.params.gamma = 0.7;
+                    sim.params.sigma = 0.8;
+                    sim.params.alpha = 1.0;
+                    sim.params.beta = 0.03;
+                    updateSliderUI('eta', 0.8);
+                    updateSliderUI('gamma', 0.7);
+                    updateSliderUI('sigma', 0.8);
+                    updateSliderUI('alpha', 1.0);
+                    updateSliderUI('beta', 0.03);
+                    sim.updateNeighbors();
+                    showPresetTip('⚠️ 重度模式', '高压社会，IMNB主导，EA-2觉醒代价极大');
+                    break;
+                case 'exitMode':
+                    // 退出所有特殊模式
+                    sim.selectMode = false;
+                    const exitBtn = document.getElementById('awaken-mode-btn');
+                    if (exitBtn) {
+                        exitBtn.textContent = '👆 点击清醒';
+                        exitBtn.className = 'p-2 bg-purple-900/30 border border-purple-700/50 hover:bg-purple-900/50 rounded-lg text-xs transition-all text-purple-200';
+                    }
+                    showPresetTip('🚪 已退出特殊模式', '恢复正常干预操作');
+                    break;
+                case 'add':
+                    sim.addAgent();
+                    break;
+            }
+        }
+
+        function updateSliderUI(name, value) {
+            const slider = document.getElementById(name);
+            const display = document.getElementById(`val-${name}`);
+            if (slider) slider.value = value;
+            if (display) display.textContent = value;
+        }
+
+        function showPresetTip(title, desc) {
+            const tip = document.createElement('div');
+            tip.className = 'absolute top-20 left-1/2 transform -translate-x-1/2 bg-slate-800/90 border px-4 py-2 rounded-lg text-sm pointer-events-none z-50';
+            tip.innerHTML = `<span class="font-bold text-white">${title}</span><br><span class="text-slate-300">${desc}</span>`;
+            document.body.appendChild(tip);
+            setTimeout(() => tip.remove(), 2500);
+        }
+
+        function addAgent() {
+            sim.addAgent();
+        }
+
+        // Initial draw
+        sim.draw();
+        sim.updateStatistics();
+
+        // Auto-start demonstration
+        setTimeout(() => {
+            if (!sim.isRunning) toggleSimulation();
+        }, 500);
+    </script>
+</body>
+</html>
