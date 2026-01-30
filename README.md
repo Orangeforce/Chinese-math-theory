@@ -1,120 +1,3 @@
-# CMS Social Dynamics Simulator
-
-> "Why do more successful people become more anxious? Why can't 'sober' people survive in this system?"
-
-This is an interactive simulator based on the **Chinese Mathematical System (CMS)**, replicating cognitive dissonance dynamics in social interactions through code.
-
----
-
-## Quick Start
-
-```bash
-git clone https://github.com/Orangeforce/-.git
-cd -
-open Chinese_Math_Simulator.html
-```
-
-Note: No dependencies required. Pure static HTML implementation - just double-click to open.
-
-## What Is This? (Plain Language Version)
-
-Imagine a social circle where each person has a self-esteem index ρ (0 ≤ ρ ≤ 1):
-
-- **ρ < 0.5 (Green)**: IMSB State ("I'm not good enough") — Cognitively sober, though painful, they are in a rational state.
-- **ρ > 0.5 (Red)**: IMNB State ("I'm pretty great") — Cognitive dissonance, generating entropy-seeking behaviors to maintain false confidence.
-
-### Core Paradox (CM-2 Impossibility Theorem)
-
-In high social density environments (σ > σ_c), "staying sober" is impossible. No matter how humble you start, system dynamics will eventually push you toward blind narcissism (ρ → 1).
-
-## Three Core Mechanisms
-
-### Vampirism
-
-**Principle**: Undeserved success makes people more inflated.
-Gaining resources through illegitimate means, succeeding despite knowing you don't deserve it → Self-esteem leap (VRA-1 Axiom).
-
-**Operation**: Click any node to trigger a "Vampirism" event.
-
-### Rice-planting
-
-**Principle**: To maintain narcissism, one must constantly do stupid things.
-People in IMNB state must make negative-expectation investments, and after failure, reinforce narcissism through "compensation" (RFA-2 Axiom).
-
-**Examples**: Vanity consumption, addictive gambling.
-
-### Group Unconsciousness Field (Φ)
-
-**Principle**: You become like the people around you.
-
-**Phenomenon**: When σ > σ_c, a "phase transition" occurs, and the system slides into a red ocean of universal narcissism.
-
----
-
-## Experiment Guide
-
-### Experiment 1: Verify CM-2 Theorem
-
-1. Keep σ < 0.5, and the system remains relatively stable (more green dots).
-2. Drag the "Social Density" slider above 0.6.
-3. **Observation**: The system rapidly turns completely red.
-
-### Experiment 2: Topological Tearing (CM-3 Theorem)
-
-1. Run the system in supercritical state (all red).
-2. Click the "Topological Tearing" button.
-3. **Observation**: The system undergoes polarization — either becoming completely sober or falling into an "ghost state" where interaction is impossible.
-
----
-
-## Parameter Description
-
-| Parameter | Meaning | Real-world Correspondence |
-|-----------|---------|---------------------------|
-| α | Vampirism transition speed | Social tolerance for unearned success / get-rich-quick opportunities |
-| β | Legitimate convergence speed | Feedback speed of effort |
-| γ | Narcissism maintenance intensity | Stubbornness of cognitive dissonance |
-| η | Unconscious field efficiency | Manipulation power of social media algorithms |
-| σ | Social density | Urbanization level, internet penetration |
-| σ_c | Critical density | Threshold for social consensus collapse |
-
----
-
-## Theoretical Background
-
-- **VRA (Vampirism-Rating Axiom)**: Vampirism-Rating Axiom
-- **RFA (Rice-planting Forced Axiom)**: Rice-planting Forced Axiom
-- **EA (Estrangement Axiom)**: Alienation/Path Dependency Axiom
-- **GUA (Group Unconsciousness Axiom)**: Group Unconsciousness Axiom
-
-### Correspondence with Classical Theories
-
-| Classical Theory | CMS Equivalent |
-|------------------|----------------|
-| Arrow's Impossibility Theorem | CM-2 Impossibility Theorem |
-| Blue Eyes Island Problem | Social phase transition trigger mechanism |
-| Ising Model | IMNB Global Attractor |
-
----
-
-## Tech Stack
-
-- **Frontend**: HTML5 Canvas, Tailwind CSS
-- **Engine**: Euler Method (solving coupled ODEs)
-- **Chart**: Chart.js
-
----
-
-## License
-
-MIT
-
----
-
-## Disclaimer
-
-This project is a demonstration of sociological theory models. The name "Chinese Mathematics" originates from the literary characterization of specific dynamical mechanisms.
-
 # CMS 社会动力学模拟器
 
 > "为什么越成功的人越焦虑？为什么'清醒'的人在这个系统里活不下去？"
@@ -141,6 +24,15 @@ open 中国数学模拟器.html
 |------------|------|------|
 | ρ < 0.5（绿色） | IMSB 状态（"我很差"） | 相对理性 |
 | ρ > 0.5（红色） | IMNB 状态（"我不错"） | 认知失调 |
+
+### 为什么叫"中国数学"？
+
+在中国很流行一种数学题：
+> 一个游泳池，一边进水一边出水，问游泳池什么时候填满？
+
+这个看似荒谬的问题，本质上揭示了一种"系统性荒谬"——**规则本身就是矛盾的**，但身处其中的人却不得不认真对待。
+
+CMS 模拟的正是这种社会动力学：**当整个系统都在"一边自我膨胀，一边自我消耗"时，个体无论怎么努力，结果都是注定的。**
 
 ### 核心悖论（CM-2 不可能性定理）
 
@@ -275,4 +167,174 @@ MIT License - 欢迎 fork 和改进，如果用于学术研究请引用。
 - 不要为系统性不公辩护
 
 **目的是理解结构，而非合理化现象。**
+# CMS Social Dynamics Simulator
 
+> "Why do more successful people become more anxious? Why can't 'sober' people survive in this system?"
+
+This is an interactive simulator based on the **Chinese Mathematical System (CMS)**, replicating cognitive dissonance dynamics in social interactions through code.
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/Orangeforce/-.git
+cd -
+open Chinese_Math_Simulator.html
+```
+
+No dependencies required. Pure frontend implementation.
+
+---
+
+## What Is This? (Plain Language Version)
+
+Imagine a social circle where each person has a "self-evaluation index" (ρ, between 0 and 1):
+
+| Self-Evaluation Index | State | Characteristics |
+|----------------------|-------|-----------------|
+| ρ < 0.5 (Green) | IMSB State ("I'm not good enough") | Relatively rational |
+| ρ > 0.5 (Red) | IMNB State ("I'm pretty great") | Cognitive dissonance |
+
+### Why "Chinese Mathematics"?
+
+A classic math problem popular in China goes like this:
+> A swimming pool has water flowing in on one side and draining out on the other. When will the pool be filled?
+
+This seemingly absurd problem reveals a fundamental truth about **systematic absurdity** — **the rules themselves are contradictory**, yet those trapped inside must take them seriously.
+
+CMS simulates exactly this kind of social dynamics: **when the entire system is "self-inflating while self-draining," individual effort becomes meaningless against structural determinism.**
+
+### Core Paradox (CM-2 Impossibility Theorem)
+
+In high social density environments (σ > σ_c), "staying sober" is impossible. No matter how humble you start, system dynamics will eventually push you toward blind narcissism (ρ → 1). **This is not your fault — it's structural.**
+
+---
+
+## Three Core Mechanisms
+
+### 1. Vampirism
+
+**"Undeserved success makes people more inflated"**
+
+- Gaining resources through illegitimate means
+- Knowing you don't deserve it, yet succeeding → Self-evaluation leap (VRA-1 Axiom)
+
+**Operation**: Click any node to trigger a "Vampirism" event
+
+### 2. Rice-planting
+
+**"To maintain narcissism, one must constantly do stupid things"**
+
+- People in IMNB state must make negative-expectation investments
+- Failure反而强化自恋（RFA-2 Axiom）
+
+**Types**:
+- Type 1 (Vanity): Buying luxury goods to appear wealthy
+- Type 2 (Intentional): Gambling, addiction
+
+### 3. Group Unconsciousness Field (Φ)
+
+**"You become like the people around you"**
+
+- Self-evaluation is influenced by neighbors
+- When σ > σ_c, a phase transition occurs, sliding toward universal narcissism
+
+**Operation**: Adjust the "Social Density" slider above 0.6 to observe the phase transition
+
+---
+
+## Experiment Guide
+
+### Experiment 1: Verify CM-2 Impossibility Theorem
+
+1. Keep σ < 0.5, system stays stable (green)
+2. Increase σ to above 0.6
+3. **Result**: System eventually turns fully red; sobriety cannot be maintained
+
+### Experiment 2: Topological Tearing (CM-3 Theorem)
+
+1. Run the system in supercritical state (all red)
+2. Click the "Topological Tearing" button
+3. **Result**: Polarization — either becoming sober or trapped in a "ghost state"
+
+### Experiment 3: The Cost of Individual Awakening (EA-2)
+
+1. Turn a red node green
+2. **Result**: Surrounding nodes turn red faster
+3. **Conclusion**: One person's awakening comes with others' sinking
+
+---
+
+## Parameter Description
+
+| Parameter | Meaning | Real-world Correspondence |
+|-----------|---------|---------------------------|
+| α | Vampirism transition speed | Social tolerance for unearned success |
+| β | Legitimate success convergence speed | Speed of effort payoff |
+| γ | Narcissism maintenance intensity | Degree of cognitive dissonance |
+| η | Unconscious field efficiency | Social media algorithm manipulation |
+| σ | Social density | Urbanization, internet penetration |
+| σ_c | Critical density | Social collapse threshold |
+
+---
+
+## Theoretical Background
+
+| Axiom | Full Name | Description |
+|-------|-----------|-------------|
+| VRA | Vampirism-Rating Axiom | Undeserved success boosts self-esteem |
+| RFA | Rice-planting Forced Axiom | Failed investments reinforce narcissism |
+| EA | Estrangement/Path Dependency Axiom | Alienation and historical path locking |
+| GUA | Group Unconsciousness Axiom | Collective influence on individuals |
+
+### Correspondence with Classical Theories
+
+| Classical Theory | CMS Equivalent |
+|------------------|----------------|
+| Arrow's Impossibility Theorem | CM-2 Impossibility Theorem |
+| Blue Eyes Island Problem | Social phase transition |
+| Ising Model | IMNB Global Attractor |
+| Keynesian Beauty Contest | Social comparison dynamics |
+
+### Testable Predictions
+
+- Collective anxiety inevitably rises when urbanization exceeds a threshold
+- After mass isolation, society splits into the awake and the trapped
+- Success → Anxiety → Risk-taking → Failure → Attribution → More narcissism (periodic)
+
+---
+
+## Tech Stack
+
+- **Native HTML5 Canvas + Tailwind CSS**
+- **Chart.js**
+- **Euler Method for solving coupled ODEs**
+- Pure static page
+
+---
+
+## Further Reading
+
+- Paper: [cms_chinese.html](cms_chinese.html) | [cms_english.html](cms_english.html)
+- [Blue-eyed Island Problem](https://en.wikipedia.org/wiki/Blue-eyed_island_puzzle)
+- [Cognitive Dissonance Theory](https://en.wikipedia.org/wiki/Cognitive_dissonance)
+
+---
+
+## License
+
+MIT License - Feel free to fork and improve. Please cite if used for academic research.
+
+---
+
+## Disclaimer
+
+> "This is not a bug, this is a feature. — Social System"
+
+This is a theoretical model. The name "Chinese Mathematics" originates from the characterization of specific social dynamics, but the model has universal applicability.
+
+- Do not use it to excuse personal moral failings
+- Do not use it to justify systemic injustice
+
+**The purpose is to understand structure, not to rationalize phenomena.**
